@@ -2,6 +2,12 @@
 
 The goal of this section is to generate the petalinux boot images (BOOT.bin and image.ub).
 
+## Pre requisites
+
+In order to start with this process we will need the following things:
+* PetaLinux tools: Xilinx linux SDK that contains Yocto Extensible SDK, XSCT (CLI utility provided by Xilinx for interacting with hardware platforms, debugging and automating workflows with the hardware) and toolchains. See "Petalinux tools reference guide" to install this.
+
+
 ## BOOT.bin
 
 The BOOT.bin file can be put into a Flash or SD card. Then, when you power on the board it can boot from the boot image.
@@ -21,9 +27,12 @@ In order to generate BOOT.bin we nee the following files:
 
 For more information on how to create a XSA, check "Creating an embedded project with zynq SoC - Example" reference.
 
+petalinux-create -t project -s ${BSP_PATH}
+
 ## Reference
 
 * https://xilinx.github.io/Embedded-Design-Tutorials/docs/2021.1/build/html/docs/Introduction/Zynq7000-EDT/4-linux-for-zynq.html
 * https://www.xilinx.com/support/documents/sw_manuals/xilinx2022_2/ug1144-petalinux-tools-reference-guide.pdf
 * [Creating an embedded project with zynq SoC - Example](https://xilinx.github.io/Embedded-Design-Tutorials/docs/2021.1/build/html/docs/Introduction/Zynq7000-EDT/2-using-zynq.html#example-1-creating-a-new-embedded-project-with-zynq-soc)
 * [Petalinux BSP Arty Z7-10](https://github.com/Digilent/Petalinux-Arty-Z7-10)
+* [Petalinux tools reference guide](https://docs.amd.com/r/en-US/ug1144-petalinux-tools-reference-guide/Overview)

@@ -1,0 +1,14 @@
+ARG OS_VERSION="22.04"
+
+FROM ubuntu:${OS_VERSION}
+
+RUN apt-get -y update && \
+    apt-get install -y --no-install-recommends \
+        iproute2 gawk python3 build-essential gcc git make net-tools \
+        libncurses5-dev tftpd libssl-dev flex bison libselinux1 \
+        gnupg wget git-core diffstat chrpath socat xterm autoconf libtool \
+        tar unzip texinfo zlib1g-dev gcc-multilib automake screen \
+        pax gzip cpio python3-pip python3-pexpect xz-utils debianutils \
+        iputils-ping python3-git python3-jinja2 libegl1-mesa libsdl1.2-dev
+#        tftpd-hpa tftp-hpa
+# python pylint3

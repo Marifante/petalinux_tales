@@ -1,14 +1,46 @@
-ARG OS_VERSION="22.04"
+ARG BASE_IMAGE_TAG="v2024.2-11062026"
+ARG PLATFORM="arm"
 
-FROM ubuntu:${OS_VERSION}
+FROM ghcr.io/marifante/petalinux_tales/petalinux_tales_only_installer:${BASE_IMAGE_TAG}
 
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install base packages required by petalinux
 RUN apt-get -y update && \
     apt-get install -y --no-install-recommends \
         iproute2 gawk python3 build-essential gcc git make net-tools \
-        libncurses5-dev tftpd libssl-dev flex bison libselinux1 \
+        libncurses5-dev libssl-dev flex bison libselinux1 \
         gnupg wget git-core diffstat chrpath socat xterm autoconf libtool \
         tar unzip texinfo zlib1g-dev gcc-multilib automake screen \
         pax gzip cpio python3-pip python3-pexpect xz-utils debianutils \
-        iputils-ping python3-git python3-jinja2 libegl1-mesa libsdl1.2-dev
-#        tftpd-hpa tftp-hpa
-# python pylint3
+        iputils-ping python3-git python3-jinja2 libegl1-mesa libsdl1.2-dev libssl-dev \
+        less rsync bc lsb-release
+        # python pylint3
+
+# Install TFTP related packages (don't know really why we need to install them in separate lines)
+RUN apt-get -y update && \
+    apt-get install -y tftpd-hpa && \
+    apt-get install -y tftp-hpa && \
+    apt-get install -y tftpd
+
+# Fix locales warning
+RUN apt-get update -y && \
+    apt-get install -y --no-install-recommends locales && \
+    locale-gen en_US.UTF-8 && \
+    update-locale LANG=en_US.UTF-8
+
+# Set bash as default terminal
+SHELL ["/bin/bash", "-c"]
+
+RUN chsh -s /bin/bash
+
+# Install petalinux
+RUN chmod 755 /opt/install_petalinux.run && \
+    /opt/install_petalinux.run -y --platform "${PLATFORM}" --dir /root/petalinux && \
+    source /root/petalinux/settings.sh
+
+ENV PATH="${PATH}:/root/petalinux/scripts"
+
+COPY . /root/petalinux_tales
+
+WORKDIR /root/petalinux_tales

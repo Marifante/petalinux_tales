@@ -25,14 +25,12 @@ In order to generate BOOT.bin we nee the following files:
 * Hardware XSA (Xilinx System Archive): this is a file obtained from Vivado. It contains the hardware configuration (peripherals, processor configurations, memory mappings, clock configurations, etc), device tree fragments, address maps, etc.
 * The BSP (Board Support Package): contains all the necessary components, tools, and configurations to build and deploy a Linux-based system for a specific hardware platform. Xilinx's BSP will contain the bitstream to program the PL of the FPGA and the device tree source (.dtsi, .dts) that describes the hardware configuration to the Linux kernel.
 
-For more information on how to create a XSA, check "Creating an embedded project with zynq SoC - Example" reference.
+For more information on how to create a XSA, check [Creating XSA](creating_xsa.md) section.
 
-petalinux-create -t project -s ${BSP_PATH}
 
 ## Reference
 
 * https://xilinx.github.io/Embedded-Design-Tutorials/docs/2021.1/build/html/docs/Introduction/Zynq7000-EDT/4-linux-for-zynq.html
 * https://www.xilinx.com/support/documents/sw_manuals/xilinx2022_2/ug1144-petalinux-tools-reference-guide.pdf
-* [Creating an embedded project with zynq SoC - Example](https://xilinx.github.io/Embedded-Design-Tutorials/docs/2021.1/build/html/docs/Introduction/Zynq7000-EDT/2-using-zynq.html#example-1-creating-a-new-embedded-project-with-zynq-soc)
 * [Petalinux BSP Arty Z7-10](https://github.com/Digilent/Petalinux-Arty-Z7-10)
 * [Petalinux tools reference guide](https://docs.amd.com/r/en-US/ug1144-petalinux-tools-reference-guide/Overview)

@@ -1,0 +1,5 @@
+ARG OS_VERSION="22.04"
+
+FROM ubuntu:${OS_VERSION}
+
+ADD installer/petalinux-v2024.2-11062026-installer.run /opt/install_petalinux.run

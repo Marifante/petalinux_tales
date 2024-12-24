@@ -7,13 +7,28 @@ import time
 import sys
 
 
-logging.basicConfig(
-    level=logging.DEBUG,              # Set the log level
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # Log message format
-    datefmt='%Y-%m-%d %H:%M:%S',     # Date format
-)
+class CustomFormatter(logging.Formatter):
+    GREEN = "\033[92m"
+    RESET = "\033[0m"
+
+    def format(self, record):
+        if record.levelno == logging.INFO:
+            record.msg = f"{self.GREEN}{record.msg}{self.RESET}"
+        return super().format(record)
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)  # Set the logger level
+
+# Create a console handler
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)  # Set the handler level
+
+# Create and set a custom formatter
+formatter = CustomFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+
+# Add the handler to the logger
+logger.addHandler(ch)
 
 
 def execute_command(command: str, cwd: str = "") -> tuple:
@@ -32,7 +47,42 @@ def execute_command(command: str, cwd: str = "") -> tuple:
                               stderr=subprocess.PIPE,  # Capture standard error
                               cwd=cwd,
                               text=True) as process:
-            stdout, stderr = process.communicate()  # Wait for the process to finish
+            process_finished = False
+            stdout_lines = []
+            stderr_lines = []
+
+            while not process_finished:
+                stdout_line = ""
+                stderr_line = ""
+
+                if process.stdout:
+                    stdout_line = process.stdout.readline()
+
+                if process.stderr:
+                    stderr_line = process.stderr.readline()
+
+                if stdout_line:
+                    print(stdout_line, end='')  # Print to stdout in real-time
+                    stdout_lines.append(stdout_line)
+
+                if stderr_line:
+                    print(stderr_line, end='', file=sys.stderr)  # Print to stderr in real-time
+                    stderr_lines.append(stderr_line)
+
+                # Break the loop when both stdout and stderr are closed
+                if not stdout_line and not stderr_line and process.poll() is not None:
+                    process_finished = True
+                    if process.stdout:
+                        process.stdout.close()
+
+                    if process.stderr:
+                        process.stderr.close()
+
+                    process.wait()  # Wait for the process to finish
+
+            stdout = ''.join(stdout_lines)
+            stderr = ''.join(stderr_lines)
+
             exit_code = process.returncode  # Get the exit code
             command_not_found = exit_code == 127 or "command not found" in stderr.lower()
 
@@ -42,19 +92,8 @@ def execute_command(command: str, cwd: str = "") -> tuple:
         exit_code = 127
         command_not_found = True
 
-    logger.info(f"STDOUT: {stdout}")
-    logger.info(f"STDERR: {stderr}")
     return stdout, stderr, exit_code, command_not_found
 
-
-def _assert_petalinux_is_installed():
-    ''' Assert if PetaLinux tools are not installed '''
-    logger.info("Checking if PetaLinux is installed in this system...")
-    _, _, _, not_found = execute_command('petalinux-create --help')
-    if not_found:
-        raise RuntimeError("Petalinux tools are not installed in this system")
-    else:
-        logger.info("PetaLinux is installed in this system!")
 
 class PetalinuxImageCreator:
     def __init__(self, bsp_path: str, xsa_path: str, dir: str):
@@ -74,7 +113,6 @@ class PetalinuxImageCreator:
         self._xsa_path = os.path.abspath(xsa_path)
 
         os.makedirs(dir, exist_ok = True)
-#        _assert_petalinux_is_installed()
 
     def _create_project(self):
         ''' Create PetaLinux project. '''

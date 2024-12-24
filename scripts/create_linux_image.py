@@ -125,13 +125,13 @@ class PetalinuxImageCreator:
     def _reconfigure_project_with_xsa(self):
         ''' Reconfigure PetaLinux project with .xsa file '''
         logger.info(f"Reconfiguring project {self._proj_name} with {self._xsa_path}")
-        execute_command(f'petalinux-config --get-hw-description {self._xsa_path} --silentconfig',
+        execute_command(f'echo "Y" | petalinux-config --get-hw-description {self._xsa_path} --silentconfig',
                         f'{self._dir}/{self._proj_name}')
 
     def _build(self):
         ''' Build linux images '''
         err = False
-        execute_command(f'petalinux-build', f'{self._dir}/{self._proj_name}')
+        execute_command(f'echo "Y" | petalinux-build', f'{self._dir}/{self._proj_name}')
 
         for image in ("boot.scr", "image.ub"):
             image_path = f"{self._dir}/{self._proj_name}/images/linux/{image}"
@@ -149,7 +149,7 @@ class PetalinuxImageCreator:
         ''' '''
         self._create_project()
         self._reconfigure_project_with_xsa()
-
+        self._build()
 
 def parse_args():
     """ Parse input arguments """

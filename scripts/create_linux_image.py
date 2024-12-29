@@ -229,7 +229,7 @@ class PetalinuxImageCreator:
         for i, step in enumerate(steps):
             exit_code = step()
             if 0 != exit_code:
-                logger.error(f"Step {i}: {step.__name__} returned exit code {exit_code}")
+                logger.error(f"Step {i} {step.__name__} returned exit code {exit_code}")
                 sys.exit(1)
 
 def parse_args():

@@ -1,0 +1,16 @@
+# Creating a BSP
+
+A BSP (Board Support Package) should contain all the features for the **board** that we will be using.
+For example, if we'll use the Arty Z7 devkit, we should have a BSP for that board.
+It contains:
+* The device-tree
+* The kernel configuration
+* The U-Boot configuration
+
+
+To create a BSP we should do the following:
+1) Create and export hardware design (HDF/XSA) from Vivado
+2) Create a blank PetaLinux project without a BSP
+3) Customize the blank PetaLinux project to fit our needs
+4) Package that PetaLinux project into a BSP
+5) Test the BSP by creating a new project.

@@ -135,22 +135,20 @@ def obtain_petalinux_installed_version(install_dir: str) -> str:
     return ret_val
 
 
-class PetalinuxImageCreator:
-    def __init__(self, bsp_path: str, xsa_path: str, dir: str, install_dir: str):
-        ''' Initialize petalinux image creator.
+class PetalinuxCommander:
+    def __init__(self, dir: str, xsa_path: str, install_dir: str):
+        ''' Initialize petalinux commander.
 
-        :param bsp_path: the path to the Board Support Package file.
         :param xsa_path: the path to the XSA path to configure the PetaLinux project.
         :param dir: work directory.
         :param install_dir: petalinux install dir.
         '''
         self._dir = dir
 
-        for file2check in (bsp_path, xsa_path, ):
+        for file2check in (xsa_path, ):
             if not os.path.isfile(file2check):
                 raise ValueError(f"{file2check} does not exists!")
 
-        self._bsp_path = os.path.abspath(bsp_path)
         self._xsa_path = os.path.abspath(xsa_path)
         self._petalinux_install_dir = os.path.abspath(install_dir)
 
@@ -162,6 +160,81 @@ class PetalinuxImageCreator:
             sys.exit(1)
 
         os.makedirs(dir, exist_ok = True)
+
+        self._steps = tuple()
+        self._proj_name = ""
+
+    def _reconfigure_project_with_xsa(self) -> int:
+        ''' Reconfigure PetaLinux project with .xsa file.
+
+        :return: 0 if succeed, an error otherwise.
+        '''
+        if not self._proj_name:
+            raise RuntimeError("Project name is not set, probably it was not created first.")
+
+        logger.info(f"Reconfiguring project {self._proj_name} with {self._xsa_path}")
+        _, _, exit_code, _ = execute_command(f'petalinux-config --get-hw-description {self._xsa_path} --silentconfig --debug',
+                        f'{self._dir}/{self._proj_name}')
+
+        return exit_code
+
+    def run(self):
+        ''' Execute the steps of this PetaLinux commander. '''
+        if 0 == len(self._steps):
+            raise NotImplementedError("Steps are not defined in child class.")
+
+        for i, step in enumerate(self._steps):
+            exit_code = step()
+            if 0 != exit_code:
+                raise RuntimeError(f"Step {i} {step.__name__} returned exit code {exit_code}")
+
+
+class PetaLinuxBSPCreator(PetalinuxCommander):
+    def __init__(self, template: str, *args, **kwargs):
+        ''' Initialize petalinux BSP creator.
+
+        :param template: the template used to generate the BSP.
+        '''
+        self._template = template
+        super().__init__(*args, **kwargs)
+
+        self._steps = (self._create_project,
+                       self._reconfigure_project_with_xsa)
+
+    def _create_project(self) -> int:
+        ''' Create empty PetaLinux project based on a template.
+
+        :return: 0 on success, an error otherwise.
+        '''
+        self._proj_name = f"petalinux_tales_bsp_{self._template}"
+        self._proj_name += f"_{self._petalinux_installed_version}"
+        self._proj_name += f"_{int(time.time())}"
+
+        logger.info(f"Creating PetaLinux project {self._proj_name}")
+        _, _, exit_code, _ = execute_command('petalinux-create project '
+                                             f'--template {self._template} '
+                                             f'--name {self._proj_name}',
+                                             self._dir)
+
+        return exit_code
+
+
+class PetalinuxImageCreator(PetalinuxCommander):
+    def __init__(self, bsp_path: str, *args, **kwargs):
+        ''' Initialize petalinux image creator.
+
+        :param bsp_path: the path to the Board Support Package file.
+        '''
+        for file2check in (bsp_path, ):
+            if not os.path.isfile(file2check):
+                raise ValueError(f"{file2check} does not exists!")
+
+        self._bsp_path = os.path.abspath(bsp_path)
+        super().__init__(*args, **kwargs)
+
+        self._steps = (self._create_project,
+                       self._reconfigure_project_with_xsa,
+                       self._build)
 
     def _create_project(self) -> int:
         ''' Create PetaLinux project.
@@ -191,17 +264,6 @@ class PetalinuxImageCreator:
 
         return exit_code
 
-    def _reconfigure_project_with_xsa(self) -> int:
-        ''' Reconfigure PetaLinux project with .xsa file
-
-        :return: 0 if succeed, an error otherwise.
-        '''
-        logger.info(f"Reconfiguring project {self._proj_name} with {self._xsa_path}")
-        _, _, exit_code, _ = execute_command(f'petalinux-config --get-hw-description {self._xsa_path} --silentconfig',
-                        f'{self._dir}/{self._proj_name}')
-
-        return exit_code
-
     def _build(self) -> int:
         ''' Build linux images.
 
@@ -222,28 +284,37 @@ class PetalinuxImageCreator:
 
         return ret_val
 
-    def run(self):
-        ''' '''
-        steps = (self._create_project, self._reconfigure_project_with_xsa, self._build)
-
-        for i, step in enumerate(steps):
-            exit_code = step()
-            if 0 != exit_code:
-                logger.error(f"Step {i} {step.__name__} returned exit code {exit_code}")
-                sys.exit(1)
 
 def parse_args():
     """ Parse input arguments """
     parser = argparse.ArgumentParser(description="Create a Linux Image for a target board.")
-    parser.add_argument('-b', '--bsp', type = str, required = True, help = "Path to board's BSP")
     parser.add_argument('-x', '--xsa', type = str, required = True, help = "Path to board's XSA")
     parser.add_argument('-d', '--dir', type = str, default = "work", help = "Work directory")
     parser.add_argument('-p', '--install-dir', type = str, default = "/root/petalinux", help = "Petalinux install dir")
+
+    subparsers = parser.add_subparsers(dest='mode', required=True, help='Chose a mode')
+
+    parser_from_bsp = subparsers.add_parser('from-bsp', help='Create a Linux image using a BSP as a base')
+    parser_from_bsp.add_argument('-b', '--bsp', type = str, required = True, help = "Path to board's BSP")
+
+    parser_create_bsp = subparsers.add_parser('create-bsp', help='Create a BSP from a blank PetaLinux project')
+    parser_create_bsp.add_argument('-t', '--template', type = str, required = True, help = "Path to board's BSP")
+
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
 
-    creator = PetalinuxImageCreator(args.bsp, args.xsa, args.dir, args.install_dir)
+    common_args = {
+        "xsa_path": args.xsa, "dir": args.dir, "install_dir": args.install_dir
+    }
+
+    if 'from-bsp' == args.mode:
+        creator = PetalinuxImageCreator(args.bsp, **common_args)
+    elif 'create-bsp' == args.mode:
+        creator = PetaLinuxBSPCreator(args.template, **common_args)
+    else:
+        raise NotImplementedError(f"Mode {args.mode} is not implemented!")
+
     creator.run()

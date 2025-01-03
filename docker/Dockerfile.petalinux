@@ -23,6 +23,24 @@ RUN apt-get -y update && \
     apt-get install -y tftp-hpa && \
     apt-get install -y tftpd
 
+# Set folder for tftp server and configure xinetd to run it
+RUN mkdir -p /tftpboot && chmod 666 /tftpboot \
+  && sed -i 's/TFTP\_USERNAME\=\"tftp\"/TFTP\_USERNAME\=\"petalinux\"/g' /etc/default/tftpd-hpa \
+  && sed -i 's/srv\/tftp/tftpboot/g' /etc/default/tftpd-hpa \
+  && sed -i 's/secure/secure \-\-create/g' /etc/default/tftpd-hpa \
+  && tee /etc/xinetd.d/tftp <<EOF
+service tftp
+{
+    socket_type     = dgram
+    protocol        = udp
+    wait            = yes
+    user            = root
+    server          = /usr/sbin/in.tftpd
+    server_args     = -s /tftpboot
+    disable         = no
+}
+EOF
+
 # Fix locales warning
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends locales && \
@@ -31,16 +49,39 @@ RUN apt-get update -y && \
 
 # Set bash as default terminal
 SHELL ["/bin/bash", "-c"]
-
+ENV SHELL=/bin/bash
 RUN chsh -s /bin/bash
 
 # Install petalinux
 RUN chmod 755 /opt/install_petalinux.run && \
-    /opt/install_petalinux.run -y --platform "${PLATFORM}" --dir /root/petalinux && \
-    source /root/petalinux/settings.sh
+    /opt/install_petalinux.run -y --platform "${PLATFORM}" --dir /root/petalinux
+
+RUN touch /root/entrypoint.sh && \
+    chmod +x /root/entrypoint.sh && \
+    tee -a /root/entrypoint.sh <<'EOF'
+#!/bin/bash
+/usr/sbin/xinetd -dontfork -stayalive &
+sleep 5
+
+# Save the arguments
+args=("$@")
+# Clear the arguments to prevent them from being passed to the sourced script
+set --
+
+source /root/petalinux/settings.sh
+
+# Restore the arguments
+set -- "${args[@]}"
+
+exec "$@"
+EOF
 
 ENV PATH="${PATH}:/root/petalinux/scripts"
 
-COPY . /root/petalinux_tales
+COPY ./scripts /root/petalinux_tales
 
 WORKDIR /root/petalinux_tales
+
+ENTRYPOINT ["/root/entrypoint.sh"]
+
+CMD ["bash"]

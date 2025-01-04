@@ -86,7 +86,7 @@ EOF
 
 ENV PATH="${PATH}:/home/embeddev/petalinux/scripts"
 
-COPY ./scripts /home/embeddev/petalinux_tales
+COPY . /home/embeddev/petalinux_tales
 
 WORKDIR /home/embeddev/petalinux_tales
 

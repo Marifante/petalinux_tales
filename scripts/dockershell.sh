@@ -14,7 +14,7 @@ REBUILD_IMAGE=false
 ## Fixed variables
 SCRIPT_PATH=$(readlink -f "$0")
 SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
-RUN_CMD="docker run --rm -it -v $(pwd):/root/petalinux_tales ${DOCKER_IMAGE_EXECUTED_LOCALLY}"
+RUN_CMD="docker run --rm -it -v $(pwd):/home/embeddev/petalinux_tales ${DOCKER_IMAGE_EXECUTED_LOCALLY}"
 
 while getopts "ro" opt; do
 	case ${opt} in

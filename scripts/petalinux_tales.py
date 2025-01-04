@@ -290,7 +290,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Create a Linux Image for a target board.")
     parser.add_argument('-x', '--xsa', type = str, required = True, help = "Path to board's XSA")
     parser.add_argument('-d', '--dir', type = str, default = "work", help = "Work directory")
-    parser.add_argument('-p', '--install-dir', type = str, default = "/root/petalinux", help = "Petalinux install dir")
+    parser.add_argument('-p', '--install-dir', type = str, default = "/home/embeddev/petalinux", help = "Petalinux install dir")
 
     subparsers = parser.add_subparsers(dest='mode', required=True, help='Chose a mode')
 

@@ -13,7 +13,7 @@ RUN apt-get -y update && \
         tar unzip texinfo zlib1g-dev gcc-multilib automake screen \
         pax gzip cpio python3-pip python3-pexpect xz-utils debianutils \
         iputils-ping python3-git python3-jinja2 libegl1-mesa libsdl1.2-dev libssl-dev \
-        less rsync bc lsb-release sudo
+        less rsync bc lsb-release libtinfo5 dnsutils sudo
         # python pylint3
 
 # Install TFTP related packages (don't know really why we need to install them in separate lines)

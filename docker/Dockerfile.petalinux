@@ -1,5 +1,4 @@
 ARG BASE_IMAGE_TAG="v2024.2-11062026"
-ARG PLATFORM="arm"
 
 FROM ghcr.io/marifante/petalinux_tales/petalinux_tales_only_installer:${BASE_IMAGE_TAG}
 
@@ -14,7 +13,7 @@ RUN apt-get -y update && \
         tar unzip texinfo zlib1g-dev gcc-multilib automake screen \
         pax gzip cpio python3-pip python3-pexpect xz-utils debianutils \
         iputils-ping python3-git python3-jinja2 libegl1-mesa libsdl1.2-dev libssl-dev \
-        less rsync bc lsb-release
+        less rsync bc lsb-release sudo
         # python pylint3
 
 # Install TFTP related packages (don't know really why we need to install them in separate lines)
@@ -22,6 +21,12 @@ RUN apt-get -y update && \
     apt-get install -y tftpd-hpa && \
     apt-get install -y tftp-hpa && \
     apt-get install -y tftpd
+
+# Fix locales warning
+RUN apt-get update -y && \
+    apt-get install -y --no-install-recommends locales && \
+    locale-gen en_US.UTF-8 && \
+    update-locale LANG=en_US.UTF-8
 
 # Set folder for tftp server and configure xinetd to run it
 RUN mkdir -p /tftpboot && chmod 666 /tftpboot \
@@ -41,47 +46,50 @@ service tftp
 }
 EOF
 
-# Fix locales warning
-RUN apt-get update -y && \
-    apt-get install -y --no-install-recommends locales && \
-    locale-gen en_US.UTF-8 && \
-    update-locale LANG=en_US.UTF-8
+# Create user embeddev and run the rest of the dockerfile with that user
+ARG USER_GID="1000"
+ARG USER_UID="1000"
 
-# Set bash as default terminal
-SHELL ["/bin/bash", "-c"]
+RUN echo "Creating user embeddev with GID=${USER_GID} and UID=${USER_UID}" && \
+    groupadd --gid ${USER_GID} embeddev && \
+    useradd --uid ${USER_UID} --gid ${USER_GID} --create-home --shell /bin/bash --comment "" embeddev && \
+    echo 'embeddev ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers && \
+    mv /opt/install_petalinux.run /home/embeddev/install_petalinux.run && \
+    chown embeddev:embeddev /home/embeddev/install_petalinux.run
+
+USER embeddev
+
+WORKDIR /home/embeddev
+
 ENV SHELL=/bin/bash
-RUN chsh -s /bin/bash
 
 # Install petalinux
-RUN chmod 755 /opt/install_petalinux.run && \
-    /opt/install_petalinux.run -y --platform "${PLATFORM}" --dir /root/petalinux
+RUN chmod 755 /home/embeddev/install_petalinux.run && \
+    /home/embeddev/install_petalinux.run -y --platform arm --dir /home/embeddev/petalinux
 
-RUN touch /root/entrypoint.sh && \
-    chmod +x /root/entrypoint.sh && \
-    tee -a /root/entrypoint.sh <<'EOF'
+# Create entrypoint which will enable tftp server and source settings.sh to finish petalinux installation
+RUN touch /home/embeddev/entrypoint.sh && \
+    chmod +x /home/embeddev/entrypoint.sh && \
+    tee -a /home/embeddev/entrypoint.sh <<'EOF'
 #!/bin/bash
 /usr/sbin/xinetd -dontfork -stayalive &
 sleep 5
-
 # Save the arguments
 args=("$@")
 # Clear the arguments to prevent them from being passed to the sourced script
 set --
-
-source /root/petalinux/settings.sh
-
+source /home/embeddev/petalinux/settings.sh
 # Restore the arguments
 set -- "${args[@]}"
-
 exec "$@"
 EOF
 
-ENV PATH="${PATH}:/root/petalinux/scripts"
+ENV PATH="${PATH}:/home/embeddev/petalinux/scripts"
 
-COPY ./scripts /root/petalinux_tales
+COPY ./scripts /home/embeddev/petalinux_tales
 
-WORKDIR /root/petalinux_tales
+WORKDIR /home/embeddev/petalinux_tales
 
-ENTRYPOINT ["/root/entrypoint.sh"]
+ENTRYPOINT ["/home/embeddev/entrypoint.sh"]
 
 CMD ["bash"]

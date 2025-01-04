@@ -45,7 +45,12 @@ fi
 
 if [[ "$(docker images -q ${DOCKER_IMAGE_EXECUTED_LOCALLY} 2>/dev/null)" == "" ]]; then
 	log "${DOCKER_IMAGE_EXECUTED_LOCALLY} do no exists! building it..."
-	docker build -f ${SCRIPT_DIR}/../docker/${DOCKERFILE} -t ${DOCKER_IMAGE_EXECUTED_LOCALLY} . &&
+	uid="$(id -u)"
+	gid="$(id -g)"
+	echo "Creating docker image (user, UID=${uid} and GID=${gid})"
+	docker build -f ${SCRIPT_DIR}/../docker/${DOCKERFILE} \
+		--build-arg USER_UID=${uid} --build-arg USER_GID=${gid} \
+		-t ${DOCKER_IMAGE_EXECUTED_LOCALLY} . &&
 		${RUN_CMD}
 else
 	log "yeah! ${DOCKER_IMAGE_EXECUTED_LOCALLY} exists!!"

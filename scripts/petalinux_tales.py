@@ -6,6 +6,7 @@ import os
 import time
 import sys
 import re
+import select
 
 
 RED = "\033[31m"
@@ -49,46 +50,46 @@ def execute_command(command: str, cwd: str = "") -> tuple:
     the same directory where the script is executed will be used.
     :returns: (stdout, stderr, exit_code, command_not_found)
     """
+    stdout = ""
+    stderr = ""
+    process_finished = False
+
     args = shlex.split(command)
-    logger.info(f"Executing: \"{args}\"")
+    logger.info(f"Executing: \"{command}\"")
 
     try:
         with subprocess.Popen(args, stdout=subprocess.PIPE,  # Capture standard output
                               stderr=subprocess.PIPE,  # Capture standard error
                               cwd=cwd,
                               text=True) as process:
-            process_finished = False
-            stdout_lines = []
-            stderr_lines = []
 
             while not process_finished:
-                stdout_line = ""
-                stderr_line = ""
+                reads = []
 
                 if process.stdout:
-                    stdout_line = process.stdout.readline()
-                    print(f"{CYAN}{stdout_line}{RESET}", end='')  # Print to stdout in real-time
-                    stdout_lines.append(stdout_line)
+                    reads.append(process.stdout.fileno())
 
                 if process.stderr:
-                    stderr_line = process.stderr.readline()
-                    print(f"{RED}{stderr_line}{RESET}", end='', file=sys.stderr)  # Print to stderr in real-time
-                    stderr_lines.append(stderr_line)
+                    reads.append(process.stderr.fileno())
 
-                # Break the loop when both stdout and stderr are closed
-                if not stdout_line and not stderr_line and process.poll() is not None:
+                ret = select.select(reads, [], [])
+
+                for fd in ret[0]:
+                    if process.stdout and fd == process.stdout.fileno():
+                        stdout_line = process.stdout.readline()
+                        if stdout_line:
+                            print(f"{CYAN}{stdout_line}{RESET}", end='')  # Print to stdout in real-time
+                            stdout += stdout_line
+                    elif process.stderr and fd == process.stderr.fileno():
+                        stderr_line = process.stderr.readline()
+                        if stderr_line:
+                            print(f"{RED}{stderr_line}{RESET}", end='', file=sys.stderr)  # Print to stderr in real-time
+                            stderr += stderr_line
+
+                # Check if the process has finished
+                if process.poll() is not None:
                     process_finished = True
-                    if process.stdout:
-                        process.stdout.close()
-
-                    if process.stderr:
-                        process.stderr.close()
-
-                    process.wait()  # Wait for the process to finish
-
-            stdout = ''.join(stdout_lines)
-            stderr = ''.join(stderr_lines)
-
+ 
             exit_code = process.returncode  # Get the exit code
             command_not_found = (exit_code == 127) or ("command not found" in stderr.lower())
 

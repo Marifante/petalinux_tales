@@ -15,6 +15,8 @@ To create a BSP we should do the following:
 5) Test the BSP by creating a new project.
 
 
-The step 2 can be done with a convenience script:
+Steps 2 to 4 can be done using a convenience script:
 
 python3 scripts/petalinux_tales.py --xsa $(pwd)/xsa/minimal_system_wrapper.xsa --dir $(pwd)/work create-bsp --template zynq
+
+This script will create a blank Petalinux project with a given template, then will allow the user to modify that BSP and when the user is done will build it and package it into a BSP.

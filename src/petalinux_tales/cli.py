@@ -12,9 +12,6 @@ logger = setup_logger(__name__)
 def parse_args():
     """ Parse input arguments """
     parser = argparse.ArgumentParser(description="Create a Linux Image for a target board.")
-    parser.add_argument('-x', '--xsa', type = str, required = True, help = "Path to board's XSA")
-    parser.add_argument('-d', '--dir', type = str, default = "work", help = "Work directory")
-    parser.add_argument('-p', '--install-dir', type = str, default = "/home/embeddev/petalinux", help = "Petalinux install dir")
 
     subparsers = parser.add_subparsers(dest='mode', required=True, help='Chose a mode')
 
@@ -24,21 +21,27 @@ def parse_args():
     parser_create_bsp = subparsers.add_parser('create-bsp', help='Create a BSP from a blank PetaLinux project')
     parser_create_bsp.add_argument('-t', '--template', type = str, required = True, help = "Path to board's BSP")
 
+    for common_par in (parser_create_bsp, parser_from_bsp, ):
+        common_par.add_argument('-x', '--xsa', type = str, required = True, help = "Path to board's XSA")
+        common_par.add_argument('-d', '--dir', type = str, default = "work", help = "Work directory")
+        common_par.add_argument('-p', '--install-dir', type = str, default = "/home/embeddev/petalinux", help = "Petalinux install dir")
+
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+def main():
+    """ Entrypoint of the cli """
     args = parse_args()
 
-    common_args = {
-        "xsa_path": args.xsa, "dir": args.dir, "install_dir": args.install_dir
-    }
-
     if 'from-bsp' == args.mode:
-        creator = PetalinuxImageCreator(args.bsp, **common_args)
+        runner = PetalinuxImageCreator(args.bsp, xsa_path = args.xsa, dir = args.dir, install_dir = args.install_dir)
     elif 'create-bsp' == args.mode:
-        creator = PetaLinuxBSPCreator(args.template, **common_args)
+        runner = PetaLinuxBSPCreator(args.template, xsa_path = args.xsa, dir = args.dir, install_dir = args.install_dir)
     else:
         raise NotImplementedError(f"Mode {args.mode} is not implemented!")
 
-    creator.run()
+    runner.run()
+
+
+if __name__ == "__main__":
+    main()

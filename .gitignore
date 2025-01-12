@@ -1,2 +1,5 @@
 installer/petalinux-v2024.2-11062026-installer.run
 work/
+petalinux-tales-venv/
+*.pyc
+src/petalinux_tales.egg-info/

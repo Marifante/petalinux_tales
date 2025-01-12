@@ -1,8 +1,9 @@
 import subprocess
 import shlex
 import select
+import sys
 
-from petalinux_tales.log import setup_logger
+from petalinux_tales.log import setup_logger, CYAN, RED, RESET
 
 
 logger = setup_logger(__name__)
@@ -21,7 +22,7 @@ def execute_command(command: str, cwd: str = "") -> tuple:
     process_finished = False
 
     args = shlex.split(command)
-    logger.info(f"Executing: \"{command}\"")
+    logger.info(f"Executing: \"{args}\"")
 
     try:
         with subprocess.Popen(args, stdout=subprocess.PIPE,  # Capture standard output
@@ -57,6 +58,7 @@ def execute_command(command: str, cwd: str = "") -> tuple:
                     process_finished = True
 
             exit_code = process.returncode  # Get the exit code
+
             command_not_found = (exit_code == 127) or ("command not found" in stderr.lower())
 
     except FileNotFoundError as excpt:

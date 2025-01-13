@@ -20,6 +20,7 @@ def parse_args():
 
     parser_create_bsp = subparsers.add_parser('create-bsp', help='Create a BSP from a blank PetaLinux project')
     parser_create_bsp.add_argument('-t', '--template', type = str, required = True, help = "Path to board's BSP")
+    parser_create_bsp.add_argument('-o', '--output', type = str, required = True, help = "Output path to deposit the BSP")
 
     for common_par in (parser_create_bsp, parser_from_bsp, ):
         common_par.add_argument('-x', '--xsa', type = str, required = True, help = "Path to board's XSA")
@@ -36,7 +37,7 @@ def main():
     if 'from-bsp' == args.mode:
         runner = PetalinuxImageCreator(args.bsp, xsa_path = args.xsa, dir = args.dir, install_dir = args.install_dir)
     elif 'create-bsp' == args.mode:
-        runner = PetaLinuxBSPCreator(args.template, xsa_path = args.xsa, dir = args.dir, install_dir = args.install_dir)
+        runner = PetaLinuxBSPCreator(args.template, args.output, xsa_path = args.xsa, dir = args.dir, install_dir = args.install_dir)
     else:
         raise NotImplementedError(f"Mode {args.mode} is not implemented!")
 

@@ -12,13 +12,15 @@ logger = setup_logger(__name__)
 
 
 class PetaLinuxBSPCreator(PetalinuxBase):
-    def __init__(self, template: str, *args, **kwargs):
+    def __init__(self, template: str, output: str, *args, **kwargs):
         ''' Initialize petalinux BSP creator.
 
         :param template: the template used to generate the BSP.
+        :param output: path where the BSP will be stored.
         '''
         self._template = template
         super().__init__(*args, **kwargs)
+        self._output = output
 
         # TODO: There is a bug in petalinux 2024.2 in which the project directory is
         # not being populated during petalinux-package and it tries to use the root.
@@ -29,7 +31,8 @@ class PetaLinuxBSPCreator(PetalinuxBase):
                        self._wait_for_user_customization,
                        self._build,
                        self._check_post_build_images_exist,
-                       self._create_boot_image_file)
+                       self._create_boot_image_file,
+                       self._package_as_bsp)
 
     def _create_project(self) -> int:
         ''' Create empty PetaLinux project based on a template.
@@ -132,3 +135,10 @@ class PetaLinuxBSPCreator(PetalinuxBase):
 
         return ret_val
 
+    def _package_as_bsp(self) -> int:
+        ''' Package the project as a BSP. '''
+        _, _, ret_val, _ = execute_command('petalinux-package bsp '
+                                           f'--project {self._dir}/{self._proj_name}'
+                                           f'--output ${self._output}',
+                                           f'{self._dir}/{self._proj_name}')
+        return ret_val

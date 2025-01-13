@@ -8,6 +8,9 @@ log() {
 
 help() {
 	echo "Script used to burn a linux image to a SD."
+	echo "This will create 2 partitions in a SD:"
+	echo "A first boot FAT32 partition where BOOT.BIN, image.ub and boot.src will be stored."
+	echo "A second rootfs EXT4 partition where the rootfs will be extracted."
 	echo
 	echo "Syntax:"
 	echo "burn_to_sd.sh [-p <petalinux_directory] [-d <device path] [-h]"
@@ -36,7 +39,7 @@ parse_args() {
 			;;
 		-p | --project)
 			shift
-			LINUX_IMAGES_DIR="${1}/images/linux"
+			PROJECT="${1}"
 			shift
 			;;
 		*)
@@ -54,6 +57,19 @@ check_prereq() {
 		log "Please run as root"
 		exit 1
 	fi
+
+	# Define an array of variables
+	variables=("DEVICE" "PROJECT")
+
+	# Check if any variable is empty
+	for var in "${variables[@]}"; do
+		if [ -z "${!var}" ]; then
+			echo "Variable $var is empty"
+			exit 1
+		fi
+	done
+
+	LINUX_IMAGES_DIR="${PROJECT}/images/linux"
 }
 
 wipe() {
@@ -75,20 +91,27 @@ create_partitions() {
 	log "Creating a new partition table on $DEVICE..."
 	parted $DEVICE --script mklabel msdos
 
-	log "Creating a new primary partition..."
-	parted $DEVICE --script mkpart primary fat32 0% 100%
+	log "Creating a boot partition..."
+	parted $DEVICE --script mkpart primary fat32 4MiB 1028MiB
 
-	PARTITION="${DEVICE}p1"
-	log "Formatting the partition $PARTITION with FAT32..."
-	mkfs.vfat -F 32 $PARTITION
+	BOOT_PARTITION="${DEVICE}p1"
+	log "Formatting the partition $BOOT_PARTITION with FAT32..."
+	mkfs.vfat -n BOOT -F 32 $BOOT_PARTITION
+
+	log "Creating a rootfs partition..."
+	parted $DEVICE --script mkpart primary ext4 1028MiB 100%
+
+	ROOTFS_PARTITION="${DEVICE}p2"
+	log "Formatting the partition $ROOTFS_PARTITION with EXT4..."
+	mkfs.ext4 -L RootFS $ROOTFS_PARTITION
 }
 
 copy_images() {
-	MOUNT_POINT="/mnt/sdcard"
+	MOUNT_POINT="/mnt/boot"
 	log "Creating mount point at $MOUNT_POINT..."
 	mkdir -p $MOUNT_POINT
-	log "Mounting $PARTITION to $MOUNT_POINT..."
-	mount $PARTITION $MOUNT_POINT
+	log "Mounting $BOOT_PARTITION to $MOUNT_POINT..."
+	mount $BOOT_PARTITION $MOUNT_POINT
 
 	rsync -av --progress --no-owner --no-group \
 		"${LINUX_IMAGES_DIR}/BOOT.BIN" \
@@ -96,7 +119,19 @@ copy_images() {
 		"${LINUX_IMAGES_DIR}/image.ub" \
 		"${MOUNT_POINT}"
 
-	umount ${PARTITION}
+	umount ${BOOT_PARTITION}
+}
+
+copy_rootfs() {
+	MOUNT_POINT="/mnt/rootfs"
+	log "Creating mount point at $MOUNT_POINT..."
+	mkdir -p $MOUNT_POINT
+	log "Mounting $ROOTFS_PARTITION to $MOUNT_POINT..."
+	mount $ROOTFS_PARTITION $MOUNT_POINT
+
+	tar -xzf "${LINUX_IMAGES_DIR}/rootfs.tar.gz" -C ${MOUNT_POINT}
+
+	umount ${ROOTFS_PARTITION}
 }
 
 main() {
@@ -104,6 +139,7 @@ main() {
 	wipe
 	create_partitions
 	copy_images
+	copy_rootfs
 }
 
 parse_args "$@"

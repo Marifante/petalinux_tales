@@ -17,6 +17,15 @@ To create a BSP we should do the following:
 
 Steps 2 to 4 can be done using a convenience script:
 
-python3 scripts/petalinux_tales.py --xsa $(pwd)/xsa/minimal_system_wrapper.xsa --dir $(pwd)/work create-bsp --template zynq
+python3 scripts/petalinux_tales.py create-bsp --xsa $(pwd)/xsa/minimal_system_wrapper.xsa --dir $(pwd)/work --template zynq --output <path_to_new_bsp>
 
 This script will create a blank Petalinux project with a given template, then will allow the user to modify that BSP and when the user is done will build it and package it into a BSP.
+During the process, the following output files will be created in work directory:
+* ${WORK_DIRECTORY}/images/linux/BOOT.BIN
+* ${WORK_DIRECTORY}/images/linux/image.ub
+* ${WORK_DIRECTORY}/images/linux/boot.scr
+* ${WORK_DIRECTORY}/images/linux/rootfs.tar.gz
+
+If you want to directly use this BSP to boot a linux in the device, you should copy BOOT.BIN, image.ub and boot.scr to boot partition of the micro SD. Also, you will need to extract rootfs.tar.gz file into rootfs partition.
+There is a convenience script in `scripts/burn_to_sd.sh` that takes care of this part of the process. That script will format the SD and copy all the necessary files.
+

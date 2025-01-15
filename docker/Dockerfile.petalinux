@@ -57,6 +57,10 @@ RUN echo "Creating user embeddev with GID=${USER_GID} and UID=${USER_UID}" && \
     mv /opt/install_petalinux.run /home/embeddev/install_petalinux.run && \
     chown embeddev:embeddev /home/embeddev/install_petalinux.run
 
+COPY . /home/embeddev/petalinux_tales
+
+RUN chown -R embeddev:embeddev /home/embeddev/petalinux_tales
+
 USER embeddev
 
 WORKDIR /home/embeddev
@@ -86,9 +90,9 @@ EOF
 
 ENV PATH="${PATH}:/home/embeddev/petalinux/scripts"
 
-COPY . /home/embeddev/petalinux_tales
-
 WORKDIR /home/embeddev/petalinux_tales
+
+RUN pip install . && export PATH="$PATH:/home/embeddev/.local/bin"
 
 ENTRYPOINT ["/home/embeddev/entrypoint.sh"]
 

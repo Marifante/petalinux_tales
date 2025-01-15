@@ -27,3 +27,4 @@ Arty Z7 has a FTDI FT2232HQ USB-UART bridge. The UART side of this controller is
 * Reference manual: https://digilent.com/reference/programmable-logic/arty-z7/reference-manual
 * Schematic: https://digilent.com/reference/_media/reference/programmable-logic/arty-z7/arty_z7_sch.pdf?srsltid=AfmBOoqua3WAcdVJAR5xSSj9IAzbiFuIKLVl9Qt1xN1VmQnntC9gqjE2
 * PS UART: https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/18842340/PS+UART
+* Arty Z7 linux: https://www.hackster.io/whitney-knitter/linux-on-zynq-arty-z7-linux-design-in-petalinux-2022-1-40c490

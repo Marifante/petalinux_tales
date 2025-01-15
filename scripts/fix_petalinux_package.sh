@@ -16,7 +16,7 @@ NEW_LINES+="        else:\n"
 NEW_LINES+="            project = args.project\n"
 NEW_LINES+="        proot = plnx_utils.exit_not_plnx_project(project)\n"
 NEW_LINES+="    else:\n"
-NEW_LINES+="        proot = plnx_utils.exit_not_plnx_project(proot="")\n"
+NEW_LINES+="        proot = plnx_utils.exit_not_plnx_project(proot=\"\")\n"
 
 if grep -q "${AUTHOR_MARK}" "${PETALINUX_PACKAGE_PATH}"; then
 	echo "petalinux-package was already modified by petalinux-tales :/"

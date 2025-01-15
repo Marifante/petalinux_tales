@@ -16,6 +16,9 @@ For more information on how to create a XSA, check "Creating an embedded project
 ![Selecting project type in Vivado](img/vivado_create_project_project_type.png)
 
 3) In "Default part" screen, choose your SoC/board.
+For example, if you are using the Arty Z710 development board, you can download from the catalog that part.
+
+For example, if you select a SoC:
 
 ![Selecting part in Vivado](img/vivado_create_project_select_part.png)
 

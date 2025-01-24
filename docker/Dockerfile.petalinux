@@ -90,11 +90,9 @@ set -- "${args[@]}"
 exec "$@"
 EOF
 
-ENV PATH="${PATH}:/home/embeddev/petalinux/scripts"
+ENV PATH="${PATH}:/home/embeddev/petalinux/scripts:/home/embeddev/.local/bin"
 
 WORKDIR /home/embeddev/petalinux_tales
-
-RUN export PATH="$PATH:/home/embeddev/.local/bin"
 
 ENTRYPOINT ["/home/embeddev/entrypoint.sh"]
 

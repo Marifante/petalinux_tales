@@ -17,7 +17,7 @@ To create a BSP we should do the following:
 
 Steps 2 to 4 can be done using a convenience script:
 
-petalinux_tales create-bsp --xsa $(pwd)/xsa/system_wrapper.xsa --dir $(pwd)/work --template zynq --output <path_to_new_bsp>
+petalinux_tales create-bsp --xsa xsa/artyz710_minimal_system_wrapper.xsa --dir work --template zynq --output bsp/new_bsp.bsp
 
 This script will create a blank Petalinux project with a given template, then will allow the user to modify that BSP and when the user is done will build it and package it into a BSP.
 During the process, the following output files will be created in work directory:

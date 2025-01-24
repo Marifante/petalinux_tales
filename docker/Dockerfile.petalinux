@@ -29,8 +29,9 @@ RUN apt-get update -y && \
     update-locale LANG=en_US.UTF-8
 
 # Set folder for tftp server and configure xinetd to run it
-RUN mkdir -p /tftpboot && chmod 666 /tftpboot \
+RUN mkdir -p /home/embeddev/tftpboot && chmod 666 /home/embeddev/tftpboot \
   && sed -i 's/TFTP\_USERNAME\=\"tftp\"/TFTP\_USERNAME\=\"petalinux\"/g' /etc/default/tftpd-hpa \
+  && sed -i 's/TFTP\_DIRECTORY\=\"\/tftpboot\"/TFTP\_DIRECTORY\=\"\/home\/embeddev\/tftpboot\"/g' /etc/default/tftpd-hpa \
   && sed -i 's/srv\/tftp/tftpboot/g' /etc/default/tftpd-hpa \
   && sed -i 's/secure/secure \-\-create/g' /etc/default/tftpd-hpa \
   && tee /etc/xinetd.d/tftp <<EOF
@@ -41,7 +42,7 @@ service tftp
     wait            = yes
     user            = root
     server          = /usr/sbin/in.tftpd
-    server_args     = -s /tftpboot
+    server_args     = -s /home/embeddev/tftpboot
     disable         = no
 }
 EOF
@@ -53,13 +54,12 @@ ARG USER_UID="1000"
 RUN echo "Creating user embeddev with GID=${USER_GID} and UID=${USER_UID}" && \
     groupadd --gid ${USER_GID} embeddev && \
     useradd --uid ${USER_UID} --gid ${USER_GID} --create-home --shell /bin/bash --comment "" embeddev && \
+    mkdir -p /home/embeddev/petalinux_tales /home/embeddev/petalinux && \
+    chown -R embeddev:embeddev /home/embeddev/ && \
     echo 'embeddev ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers && \
     mv /opt/install_petalinux.run /home/embeddev/install_petalinux.run && \
-    chown embeddev:embeddev /home/embeddev/install_petalinux.run
-
-COPY . /home/embeddev/petalinux_tales
-
-RUN chown -R embeddev:embeddev /home/embeddev/petalinux_tales
+    chown embeddev:embeddev /home/embeddev/install_petalinux.run && \
+    ls -lash /home/embeddev/
 
 USER embeddev
 
@@ -67,8 +67,10 @@ WORKDIR /home/embeddev
 
 ENV SHELL=/bin/bash
 
+COPY . /home/embeddev/petalinux_tales
+
 # Install petalinux
-RUN chmod 755 /home/embeddev/install_petalinux.run && \
+RUN ls -lash /home/embeddev && chmod 755 /home/embeddev/install_petalinux.run && \
     /home/embeddev/install_petalinux.run -y --platform arm --dir /home/embeddev/petalinux
 
 # Create entrypoint which will enable tftp server and source settings.sh to finish petalinux installation
@@ -92,7 +94,7 @@ ENV PATH="${PATH}:/home/embeddev/petalinux/scripts"
 
 WORKDIR /home/embeddev/petalinux_tales
 
-RUN pip install . && export PATH="$PATH:/home/embeddev/.local/bin"
+RUN export PATH="$PATH:/home/embeddev/.local/bin"
 
 ENTRYPOINT ["/home/embeddev/entrypoint.sh"]
 

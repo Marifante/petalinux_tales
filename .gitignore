@@ -3,3 +3,4 @@ work/
 petalinux-tales-venv/
 *.pyc
 src/petalinux_tales.egg-info/
+build/
